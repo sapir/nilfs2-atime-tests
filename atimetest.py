@@ -31,8 +31,9 @@ def umount(path):
 class TestNilfs(unittest.TestCase):
     IMG_PATH = 'fs.dat'
     MOUNT_PATH = 'mynilfs'
-    MOUNT_OPTS = ['loop']
+    MOUNT_OPTS = ['loop', 'strictatime']
     TEST_FILE_NAME = 'abc.txt'
+    WAIT_TIME = 2
     
     def _mount(self):
         mount_nilfs(self.IMG_PATH, self.MOUNT_PATH, self.MOUNT_OPTS)
@@ -57,10 +58,12 @@ class TestNilfs(unittest.TestCase):
         return os.path.join(self.MOUNT_PATH, self.TEST_FILE_NAME)
     
     def _write_test_file(self):
+        print 'Writing'
         with open(self._test_file_path, 'wt') as f:
             print >>f, 'hi there'
     
     def _read_test_file(self):
+        print 'Reading'
         with open(self._test_file_path, 'rt') as f:
             return f.read()
     
@@ -69,7 +72,7 @@ class TestNilfs(unittest.TestCase):
         return st.st_mtime, st.st_atime
     
     def _wait_a_bit(self):
-        time.sleep(2)
+        time.sleep(self.WAIT_TIME)
     
     def test_simple(self):
         self._write_test_file()
@@ -85,13 +88,14 @@ class TestNilfs(unittest.TestCase):
             self._read_test_file()
             m, a = self._stat_test_file()
             self.assertEqual(m, m0)
-            self.assertGreater(a, a0)
+            self.assertAlmostEqual(a - a0, (i + 1) * self.WAIT_TIME, 0)
     
     def test_atime_survives_umount(self):
         self._write_test_file()
         self._wait_a_bit()
         self._read_test_file()
         m0, a0 = self._stat_test_file()
+        self.assertAlmostEqual(a0 - m0, self.WAIT_TIME, 0)
         self._wait_a_bit()
         self._umount()
         self._wait_a_bit()
@@ -99,7 +103,6 @@ class TestNilfs(unittest.TestCase):
         m1, a1 = self._stat_test_file()
         self.assertEqual(m0, m1)
         self.assertEqual(a0, a1)
-        self.assertGreater(a0, m0)
 
 if __name__ == '__main__':
     unittest.main()
