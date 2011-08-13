@@ -1,0 +1,9 @@
+To run:
+    
+    sudo python atimetest.py
+
+Note that tested nilfs2 module must already be insmod'ed for
+this to work.
+
+Also note that to see the module's error messages, you'll have
+to look at dmesg.
